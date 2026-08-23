@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/NeoTrinity/chat/internal/autopilot"
+	"github.com/NeoTrinity/chat/internal/db"
 	"github.com/NeoTrinity/chat/internal/ipc"
 	"github.com/NeoTrinity/chat/internal/network"
 )
@@ -24,21 +25,26 @@ func main() {
 		log.Fatalf("Cannot create state directory: %v", err)
 	}
 
-	// Start embedded Tailscale node.
-	// Hostname is used as the Tailscale machine name.
-	// On Trinity's machine the binary is identical; the alias is set via config.
-	hostname := os.Getenv("NEOCHAT_ALIAS")
-	if hostname == "" {
-		hostname = "neochat"
+	// Open the local SQLite database.
+	database, err := db.Open(filepath.Join(stateDir, "neochat.db"))
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
 	}
-	tsNode, err := network.StartTailscale(stateDir, hostname)
+
+	// Resolve alias (Neo or Trinity) from environment or config.
+	alias := os.Getenv("NEOCHAT_ALIAS")
+	if alias == "" {
+		alias = "neochat"
+	}
+
+	// Start embedded Tailscale node.
+	tsNode, err := network.StartTailscale(stateDir, alias)
 	if err != nil {
 		log.Fatalf("Failed to start Tailscale: %v", err)
 	}
 	defer tsNode.Close()
 
 	// Start the Autopilot listener *on the Tailscale interface only*.
-	// This guarantees it is never reachable from the LAN or public internet.
 	apListener, err := tsNode.Listen(autopilot.AutopilotPort)
 	if err != nil {
 		log.Fatalf("Failed to start autopilot listener: %v", err)
@@ -47,7 +53,7 @@ func main() {
 	fmt.Printf("[chatd] Autopilot listener active on Tailscale port %d.\n", autopilot.AutopilotPort)
 
 	// Start the P2P sync server on the Tailscale interface.
-	p2pServer := network.NewP2PServer(tsNode, 7122)
+	p2pServer := network.NewP2PServer(tsNode, 7122, database, alias)
 	if err := p2pServer.Start(); err != nil {
 		log.Fatalf("Failed to start P2P sync server: %v", err)
 	}
