@@ -7,54 +7,80 @@ NeoChat is a secure, stealthy, peer-to-peer terminal chat application built over
 ## 1. Installation
 
 ### For Neo (NixOS)
-1. Ensure your NixOS environment is configured for Go development.
-2. Clone this repository:
+**Prerequisites:** You must have Go 1.22+ and `gcc` installed (for SQLite CGO).
+
+1. Clone this repository to your local machine:
    ```bash
    git clone git@github.com:Lysandercodes/NeoChat.git
    cd NeoChat
    ```
-3. Build the binaries:
+2. Build the Linux binaries for your machine:
    ```bash
+   mkdir -p bin
    go build -o bin/chat ./cmd/chat
    go build -o bin/chatd ./cmd/chatd
    ```
-4. Run the daemon in the background (or configure a systemd user service for `chatd`).
+3. Build the macOS Apple Silicon binaries for Trinity:
+   ```bash
+   GOOS=darwin GOARCH=arm64 go build -o bin/chat-macos ./cmd/chat
+   GOOS=darwin GOARCH=arm64 go build -o bin/chatd-macos ./cmd/chatd
+   ```
+4. Package the `bin` directory and `scripts/install_macos.sh` into a ZIP file and send it to Trinity securely.
+5. Run your daemon in the background:
+   ```bash
+   ./bin/chatd &
+   ```
 
 ### For Trinity (macOS M3 / Apple Silicon)
-1. Neo will send you the compiled binaries or package. Download them to a folder.
-2. Open your Terminal and run the installation script:
+**Prerequisites:** None. All dependencies are embedded in the binary.
+
+1. Download the ZIP file Neo sent you and extract it to your `Downloads` folder.
+2. Open the **Terminal** application (Command + Space -> type "Terminal" -> Enter).
+3. Navigate to the extracted folder:
+   ```bash
+   cd ~/Downloads/NeoChat-Package
+   ```
+4. Run the automated installation script. This script will bypass Gatekeeper quarantines, move the binaries to `/usr/local/bin`, and configure macOS `launchd` to keep the daemon running forever in the background.
    ```bash
    chmod +x scripts/install_macos.sh
    ./scripts/install_macos.sh
    ```
-   *Note: If macOS prevents the app from running due to an "unidentified developer," you may need to go to System Settings > Privacy & Security and click "Open Anyway" for NeoChat.*
-3. The background daemon (`chatd`) is now running silently and will survive reboots via `launchd`.
+5. The background daemon (`chatd`) is now running silently and will survive reboots. You can close this terminal window.
 
 ---
 
 ## 2. First-Run Setup & Pairing
 
-Once installed, **both** users must complete the initial setup.
+Once installed, **both** users must complete the initial setup to join the private VPN and exchange encryption keys.
 
-1. **Setup Node:**
-   ```bash
-   chat setup
-   ```
-   - Enter your Alias (`Neo` or `Trinity`).
-   - Enter a strong local connection password (this encrypts your local database).
-   - **Important:** An authentication URL will be printed. Click it to authorize this embedded Tailscale node to your private Tailscale network.
+### Step 1: Initialize the Node
+Both Neo and Trinity must open their terminal and run:
+```bash
+chat setup
+```
+1. You will be prompted to enter your Alias (`Neo` or `Trinity`).
+2. You will be prompted for a strong local connection password. **Do not forget this password** — it locally encrypts your SQLite database.
+3. **Tailscale Authentication:** The terminal will print a secure Tailscale login URL. 
+   - Click the URL to open your browser.
+   - Log in using a shared account (e.g., a dedicated Google or GitHub account you both share for this Tailscale network).
+   - Once authenticated, your node is officially connected to the private peer-to-peer network.
 
-2. **Pair Devices:**
-   Once both nodes are on the Tailscale network, you must cryptographically trust each other.
-   ```bash
-   chat pair
-   ```
-   Exchange fingerprints and confirm the pairing.
+### Step 2: Cryptographic Pairing
+Once both of your nodes are authenticated on the Tailscale network, you must cryptographically trust each other's devices.
+Both Neo and Trinity must run:
+```bash
+chat pair
+```
+1. The app will search the Tailscale network for the other node.
+2. It will display a cryptographic Fingerprint (e.g., `SHA256:a1b2c3...`).
+3. **Verify** out-of-band (over a secure channel like Signal or in-person) that the fingerprint displayed matches the one on the other person's screen.
+4. Confirm the pairing.
 
-3. **Start Chatting:**
-   ```bash
-   chat
-   ```
+### Step 3: Start Chatting
+Simply type:
+```bash
+chat
+```
 
 ---
 
