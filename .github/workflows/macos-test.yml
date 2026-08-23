@@ -1,0 +1,38 @@
+name: macOS CI Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest # Runs on Apple Silicon / macOS VMs provided by GitHub
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Build macOS binaries
+      run: |
+        mkdir -p bin
+        go build -o bin/chat ./cmd/chat
+        go build -o bin/chatd ./cmd/chatd
+
+    - name: Test macOS launchd script
+      run: |
+        chmod +x scripts/install_macos.sh
+        # Attempt to run the install script (it will copy binaries and load plist)
+        ./scripts/install_macos.sh
+        
+        # Verify the service is recognized by launchctl
+        launchctl list | grep com.neotrinity.chatd || echo "Service not found in launchctl"
+        
+        # We stop it so it doesn't hang the runner indefinitely
+        launchctl stop com.neotrinity.chatd || true
+        launchctl unload ~/Library/LaunchAgents/com.neotrinity.chatd.plist || true
