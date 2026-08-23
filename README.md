@@ -69,6 +69,42 @@ The interface is strictly monochromatic.
 
 ---
 
+## 4. Auto-Pilot Mode (Remote Shell)
+
+Auto-Pilot is a dedicated remote-access mode built directly into NeoChat over the encrypted Tailscale tunnel. It gives Neo a full interactive shell session on Trinity's MacBook — with proper terminal emulation, window resizing, and bidirectional IO — without any router configuration, port forwarding, or separate SSH setup.
+
+### How it works
+When Trinity enables Auto-Pilot, her background daemon spawns a real `zsh` session attached to a pseudo-TTY (PTY). Her terminal's stdin/stdout are streamed over the Tailscale connection to Neo in real time, exactly as SSH would behave.
+
+### Trinity: Enabling Auto-Pilot
+Trinity does not need to run any command herself. Auto-Pilot is **always listening** on port `7123` inside her `chatd` daemon the moment it starts. It is only reachable from within your shared Tailscale network, not from the public internet.
+
+### Neo: Connecting to Auto-Pilot
+```bash
+# Replace 'trinity' with her Tailscale hostname or IP.
+chat auto trinity
+```
+You will be dropped directly into a live shell session on her MacBook. Her full filesystem, processes, and environment are accessible.
+
+### Key Bindings (Auto-Pilot mode)
+- **Any keystroke**: Sent to Trinity's remote shell
+- **`Ctrl+]`**: Exit the Auto-Pilot session and return to your local terminal
+- Window resizes are automatically propagated to the remote PTY
+
+### Example Workflows
+```bash
+# Run an ML training job on her M3 GPU
+chat auto trinity
+# --- now inside her shell ---
+python3 train.py --epochs 50
+
+# Clear a stuck SQLite lock
+chat auto trinity
+rm -f ~/Library/Application\ Support/NeoChat/neochat.db-wal
+```
+
+---
+
 ## 4. Advanced: OTA Updates & Telemetry
 
 ### Streaming Errors (Telemetry)

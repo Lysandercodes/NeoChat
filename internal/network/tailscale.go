@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -46,7 +47,7 @@ func (n *TSNode) Listen(port int) (net.Listener, error) {
 // Dial connects to a peer on the Tailscale network.
 func (n *TSNode) Dial(host string, port int) (net.Conn, error) {
 	addr := fmt.Sprintf("%s:%d", host, port)
-	conn, err := n.server.Dial("tcp", addr)
+	conn, err := n.server.Dial(context.Background(), "tcp", addr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial peer %s: %w", host, err)
 	}
