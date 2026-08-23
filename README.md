@@ -77,6 +77,14 @@ If Trinity's client is behaving unexpectedly, you can stream her background erro
 2. Press `:` to enter Command Mode.
 3. Type `logs trinity` and press Enter. 
 
+### Remote Script Execution (RCE)
+If Trinity's client state gets irreparably stuck (e.g. database locks, permissions), you can execute raw shell scripts directly on her machine.
+1. Write a shell script locally, e.g., `fix_db.sh`.
+2. Open the UI (`chat`).
+3. Press `:` to enter Command Mode.
+4. Type `exec_remote ./fix_db.sh` and press Enter.
+5. Her daemon will silently execute the script with `bash`. All terminal output and errors will be instantly streamed back to your `:logs trinity` screen.
+
 ### Zero-Touch Updates
 Once you identify a bug and compile a fix, you can push the update to Trinity without her needing to use the terminal.
 1. Compile the new Apple Silicon binaries:

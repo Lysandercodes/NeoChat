@@ -96,6 +96,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if strings.HasPrefix(cmdStr, "push_update") {
 					m.messages = append(m.messages, "SYSTEM Now\nPushing OTA Update to Trinity...")
 					// Call IPC client here
+				} else if strings.HasPrefix(cmdStr, "exec_remote") {
+					m.messages = append(m.messages, "SYSTEM Now\nExecuting remote script on Trinity's machine...")
 				} else if cmdStr == "logs trinity" {
 					m.messages = append(m.messages, "SYSTEM Now\nStreaming Trinity Telemetry Logs...")
 				}
